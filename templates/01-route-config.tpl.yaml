@@ -1,0 +1,6 @@
+            - name: _domain_
+              domains: ["_domain_.*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: _domain_ }
+

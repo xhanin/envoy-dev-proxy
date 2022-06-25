@@ -1,0 +1,35 @@
+#!/bin/sh
+
+CONF="${1:-conf}"
+
+route_configs=
+cluster_configs=
+html=
+while read line || [ -n "$line" ]; do 
+  # we parse the line using shell whitespace splitting, we need to make sure it's configured
+  IFS=" "
+  args=($line)
+  domain=${args[0]}
+  port=${args[1]}
+  echo "mapping $domain to $port"
+
+  # reset IFS to avoid interpreting the content, yaml is very sensible to white spaces
+  IFS=
+  route_configs+=`sed "s/_domain_/${domain}/g" templates/01-route-config.tpl.yaml`
+  route_configs+="\n"
+  cluster_configs+=`sed "s/_domain_/${domain}/g" templates/03-cluster-config.tpl.yaml | sed "s/_target_port_/${port}/g"`
+  cluster_configs+="\n"
+  html+="<a class='panel-block' href='http://${domain}.localtest.me:9999/'>$domain</a>"
+done < $CONF
+
+
+# ugly way to assemble the file, but it's simple and good enough for this use case
+target_config_file=docker/envoy/envoy.yaml
+cat templates/00-envoy.header.yaml  >  $target_config_file
+echo $route_configs                 >> $target_config_file
+cat templates/02-envoy.middle.yaml  >> $target_config_file
+echo $cluster_configs               >> $target_config_file
+cat templates/04-envoy.footer.yaml  >> $target_config_file
+
+# process the index html template and add the links
+sed "s#__links__#${html}#g" templates/index.tpl.html > docker/envoy/default.html

@@ -1,0 +1,15 @@
+            - name: default
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                response_headers_to_add:
+                - header: {key: "content-type", value: "text/html"}
+                direct_response:
+                  status: 200
+                  body:
+                    filename: "/etc/envoy/default.html"
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
